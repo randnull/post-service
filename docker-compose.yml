@@ -1,0 +1,55 @@
+version: '3'
+services:
+  postgresql:
+    image: postgres:latest
+    container_name: postgresql
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=posts
+    networks:
+      - posts-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  migrations:
+    image: liquibase/liquibase:4.19.0
+    volumes:
+      - ./migrations:/app
+    command: --defaultsFile=/app/dev.properties update
+    networks:
+      - posts-network
+    depends_on:
+      - postgresql
+  posts-service:
+    container_name: "posts-service"
+    build: 
+      context: ./
+      dockerfile: ./internal/dockerfile
+    ports:
+      - "6050:6050"
+    depends_on:
+      postgresql:
+        condition: service_started
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - posts-network
+    environment:
+      DB_USER: "admin"
+      DB_PASSWORD: "admin"
+      DB_HOST: "postgresql"
+      DB_NAME: "posts"
+      DB_PORT: 5432
+      PORT: 6050
+      REPO_TYPE: "postgres"
+      MAX_COM_LEN: 2000
+
+networks:
+  posts-network:
+    name: "posts-network"

@@ -1,0 +1,27 @@
+@startuml er-diagram
+
+skinparam linetype ortho
+
+entity "posts" as post_table {
+  *id : UUID <<PK>>
+  --
+'   *user_id : INTEGER <<FK>>
+  *title : VARCHAR
+  *content : VARCHAR
+  *allow_comments: BOOLEAN
+  *created_at : TIMESTAMP
+}
+
+entity "comments" as comment_table {
+  *id : UUID <<PK>>
+  --
+  *post_id : UUID <<FK>>
+  parent_id : UUID <<FK>>
+  *content: VARCHAR
+  *created_at : TIMESTAMP
+}
+
+comment_table ||..o{ post_table
+comment_table ||..o{ comment_table
+
+@enduml
